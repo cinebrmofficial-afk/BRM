@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>StreamAnalytics - Dashboard de APIs</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Space Grotesk', 'sans-serif'],
+                    },
+                    colors: {
+                        dark: {
+                            900: '#0a0a0f',
+                            800: '#12121a',
+                            700: '#1a1a2e',
+                            600: '#252542',
+                        },
+                        accent: {
+                            blue: '#3b82f6',
+                            purple: '#8b5cf6',
+                            cyan: '#06b6d4',
+                            pink: '#ec4899',
+                            green: '#10b981',
+                            orange: '#f59e0b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #0a0a0f 0%, #12121a 50%, #1a1a2e 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-panel {
+            background: rgba(26, 26, 46, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        
+        .provider-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .provider-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+        
+        .stat-number {
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .gradient-border {
+            position: relative;
+        }
+        
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.5), rgba(139, 92, 246, 0.5));
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+        
+        .animate-pulse-slow {
+            animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="text-gray-300 font-sans antialiased">
+
+    <!-- Header -->
+    <header class="glass-panel sticky top-0 z-50 border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-blue to-accent-purple flex items-center justify-center">
+                        <i class="ph ph-chart-polar text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-display font-bold text-xl text-white tracking-tight">StreamAnalytics</h1>
+                        <p class="text-xs text-gray-500">Dashboard de APIs de Streaming</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <div class="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg bg-dark-800 border border-white/5">
+                        <span class="w-2 h-2 rounded-full bg-accent-green animate-pulse"></span>
+                        <span class="text-sm text-gray-400">Sistema Online</span>
+                    </div>
+                    <a href="https://github.com" target="_blank" class="p-2 rounded-lg hover:bg-white/5 transition-colors">
+                        <i class="ph ph-github-logo text-xl"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Stats Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="glass-panel rounded-2xl p-6 provider-card">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-accent-blue/20 flex items-center justify-center">
+                        <i class="ph ph-film-strip text-accent-blue text-2xl"></i>
+                    </div>
+                    <span class="text-xs text-accent-green flex items-center gap-1">
+                        <i class="ph ph-trend-up"></i> +12%
+                    </span>
+                </div>
+                <p class="text-sm text-gray-500 mb-1">Total de Filmes</p>
+                <p class="text-3xl font-display font-bold stat-number" id="total-movies">0</p>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-6 provider-card">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-accent-purple/20 flex items-center justify-center">
+                        <i class="ph ph-television text-accent-purple text-2xl"></i>
+                    </div>
+                    <span class="text-xs text-accent-green flex items-center gap-1">
+                        <i class="ph ph-trend-up"></i> +8%
+                    </span>
+                </div>
+                <p class="text-sm text-gray-500 mb-1">Total de Séries</p>
+                <p class="text-3xl font-display font-bold stat-number" id="total-tv">0</p>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-6 provider-card">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-accent-cyan/20 flex items-center justify-center">
+                        <i class="ph ph-check-circle text-accent-cyan text-2xl"></i>
+                    </div>
+                    <span class="text-xs text-gray-500">Atualizado agora</span>
+                </div>
+                <p class="text-sm text-gray-500 mb-1">APIs Ativas</p>
+                <p class="text-3xl font-display font-bold stat-number">6</p>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-6 provider-card">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-accent-pink/20 flex items-center justify-center">
+                        <i class="ph ph-database text-accent-pink text-2xl"></i>
+                    </div>
+                    <span class="text-xs text-accent-green flex items-center gap-1">
+                        <i class="ph ph-trend-up"></i> +24%
+                    </span>
+                </div>
+                <p class="text-sm text-gray-500 mb-1">IDs Vinculados</p>
+                <p class="text-3xl font-display font-bold stat-number" id="total-ids">0</p>
+            </div>
+        </div>
+
+        <!-- Main Chart -->
+        <div class="glass-panel rounded-2xl p-6 mb-8 gradient-border">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="font-display font-bold text-lg text-white">Visão Geral do Catálogo</h2>
+                    <p class="text-sm text-gray-500">Comparativo de filmes e séries por provedor</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="updateTimeRange('7d')" class="px-3 py-1.5 rounded-lg text-sm bg-accent-blue/20 text-accent-blue hover:bg-accent-blue/30 transition-colors">7D</button>
+                    <button onclick="updateTimeRange('30d')" class="px-3 py-1.5 rounded-lg text-sm bg-dark-800 text-gray-400 hover:bg-dark-700 transition-colors">30D</button>
+                    <button onclick="updateTimeRange('90d')" class="px-3 py-1.5 rounded-lg text-sm bg-dark-800 text-gray-400 hover:bg-dark-700 transition-colors">90D</button>
+                </div>
+            </div>
+            <div class="chart-container">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Providers Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <!-- Provider Cards -->
+            <div class="glass-panel rounded-2xl p-6">
+                <h3 class="font-display font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="ph ph-hard-drives text-accent-blue"></i>
+                    Provedores Disponíveis
+                </h3>
+                <div class="space-y-3" id="providers-list">
+                    <!-- Providers will be injected here -->
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="glass-panel rounded-2xl p-6">
+                <h3 class="font-display font-bold text-white mb-4 flex items-center gap-2">
+                    <i class="ph ph-chart-pie-slice text-accent-purple"></i>
+                    Distribuição por Tipo
+                </h3>
+                <div class="chart-container" style="height: 250px;">
+                    <canvas id="distributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detailed Charts -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="glass-panel rounded-2xl p-6">
+                <h3 class="font-display font-bold text-white mb-4">Filmes por ID KinoPoisk</h3>
+                <div class="chart-container">
+                    <canvas id="kinopoiskMoviesChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-6">
+                <h3 class="font-display font-bold text-white mb-4">Séries por ID KinoPoisk</h3>
+                <div class="chart-container">
+                    <canvas id="kinopoiskTvChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-6">
+                <h3 class="font-display font-bold text-white mb-4">Filmes por ID IMDb</h3>
+                <div class="chart-container">
+                    <canvas id="imdbMoviesChart"></canvas>
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-6">
+                <h3 class="font-display font-bold text-white mb-4">Séries por ID IMDb</h3>
+                <div class="chart-container">
+                    <canvas id="imdbTvChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-12 text-center text-sm text-gray-600 pb-8">
+            <p>StreamAnalytics Dashboard © 2024</p>
+            <p class="mt-1">Dados atualizados em tempo real das APIs de streaming</p>
+        </footer>
+    </main>
+
+    <script>
+        // Configuration
+        const providers = [
+            { id: 'collaps', name: 'Collaps', color: '#3b82f6', icon: 'ph-play-circle' },
+            { id: 'alloha', name: 'Alloha', color: '#8b5cf6', icon: 'ph-film-strip' },
+            { id: 'hdvb', name: 'HDVB', color: '#06b6d4', icon: 'ph-high-definition' },
+            { id: 'videocdn', name: 'VideoCDN', color: '#ec4899', icon: 'ph-video-camera' },
+            { id: 'kodik', name: 'Kodik', color: '#10b981', icon: 'ph-code' },
+            { id: 'bazon', name: 'Bazon', color: '#f59e0b', icon: 'ph-cloud' }
+        ];
+
+        // Generate realistic data
+        function generateDataPoints(count, min, max) {
+            return Array.from({ length: count }, (_, i) => {
+                const date = new Date();
+                date.setDate(date.getDate() - (count - i));
+                return {
+                    x: date,
+                    y: Math.floor(Math.random() * (max - min + 1)) + min
+                };
+            });
+        }
+
+        // Chart.js default configuration
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.05)';
+        Chart.defaults.font.family = 'Inter';
+
+        // Main Chart
+        const mainCtx = document.getElementById('mainChart').getContext('2d');
+        const mainChart = new Chart(mainCtx, {
+            type: 'line',
+            data: {
+                datasets: providers.map(p => ({
+                    label: p.name,
+                    data: generateDataPoints(30, 1000, 5000),
+                    borderColor: p.color,
+                    backgroundColor: p.color + '20',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 6
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            color: '#e2e8f0'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            unit: 'day',
+                            displayFormats: {
+                                day: 'dd/MM'
+                            }
+                        },
+                        grid: {
+                            display: false
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.03)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Distribution Chart (Doughnut)
+        const distCtx = document.getElementById('distributionChart').getContext('2d');
+        const distributionChart = new Chart(distCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Filmes', 'Séries', 'Documentários', 'Anime'],
+                datasets: [{
+                    data: [45, 30, 15, 10],
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.8)',
+                        'rgba(139, 92, 246, 0.8)',
+                        'rgba(6, 182, 212, 0.8)',
+                        'rgba(236, 72, 153, 0.8)'
+                    ],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true
+                        }
+                    }
+                }
+            }
+        });
+
+        // Create provider list
+        function renderProviders() {
+            const container = document.getElementById('providers-list');
+            providers.forEach(p => {
+                const movies = Math.floor(Math.random() * 3000) + 2000;
+                const series = Math.floor(Math.random() * 1500) + 500;
+                
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-4 rounded-xl bg-dark-800/50 border border-white/5 hover:border-white/10 transition-all cursor-pointer group';
+                div.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center" style="background: ${p.color}20">
+                            <i class="ph ${p.icon}" style="color: ${p.color}; font-size: 1.25rem;"></i>
+                        </div>
+                        <div>
+                            <p class="font-medium text-white group-hover:text-accent-blue transition-colors">${p.name}</p>
+                            <p class="text-xs text-gray-500">${movies.toLocaleString()} filmes · ${series.toLocaleString()} séries</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors" title="API">
+                            <i class="ph ph-link"></i>
+                        </button>
+                        <button class="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors" title="Testar">
+                            <i class="ph ph-play"></i>
+                        </button>
+                        <button class="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-white transition-colors" title="GitHub">
+                            <i class="ph ph-github-logo"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Create detail charts
+        function createDetailChart(canvasId, label) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: providers.map(p => ({
+                        label: p.name,
+                        data: generateDataPoints(30, 100, 1000),
+                        borderColor: p.color,
+                        backgroundColor: p.color + '10',
+                        fill: false,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    }))
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.03)'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize detail charts
+        createDetailChart('kinopoiskMoviesChart', 'Filmes KinoPoisk');
+        createDetailChart('kinopoiskTvChart', 'Séries KinoPoisk');
+        createDetailChart('imdbMoviesChart', 'Filmes IMDb');
+        createDetailChart('imdbTvChart', 'Séries IMDb');
+
+        // Animate numbers
+        function animateValue(id, start, end, duration) {
+            const obj = document.getElementById(id);
+            const range = end - start;
+            const minTimer = 50;
+            let stepTime = Math.abs(Math.floor(duration / range));
+            stepTime = Math.max(stepTime, minTimer);
+            let startTime = new Date().getTime();
+            let endTime = startTime + duration;
+            let timer;
+            
+            function run() {
+                let now = new Date().getTime();
+                let remaining = Math.max((endTime - now) / duration, 0);
+                let value = Math.round(end - (remaining * range));
+                obj.innerHTML = value.toLocaleString();
+                if (value == end) {
+                    clearInterval(timer);
+                }
+            }
+            
+            timer = setInterval(run, stepTime);
+            run();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProviders();
+            
+            // Animate stats
+            setTimeout(() => {
+                animateValue('total-movies', 0, 45231, 2000);
+                animateValue('total-tv', 0, 28456, 2000);
+                animateValue('total-ids', 0, 89342, 2000);
+            }, 500);
+        });
+
+        // Time range update
+        function updateTimeRange(range) {
+            // Update active button
+            event.target.parentElement.querySelectorAll('button').forEach(btn => {
+                btn.classList.remove('bg-accent-blue/20', 'text-accent-blue');
+                btn.classList.add('bg-dark-800', 'text-gray-400');
+            });
+            event.target.classList.remove('bg-dark-800', 'text-gray-400');
+            event.target.classList.add('bg-accent-blue/20', 'text-accent-blue');
+            
+            // Update chart data (simulated)
+            mainChart.data.datasets.forEach(dataset => {
+                const count = range === '7d' ? 7 : range === '30d' ? 30 : 90;
+                dataset.data = generateDataPoints(count, 1000, 5000);
+            });
+            mainChart.update();
+        }
+
+        // Real-time updates simulation
+        setInterval(() => {
+            // Randomly update one dataset
+            const datasetIndex = Math.floor(Math.random() * providers.length);
+            const lastPoint = mainChart.data.datasets[datasetIndex].data.slice(-1)[0];
+            const newValue = Math.max(1000, lastPoint.y + Math.floor(Math.random() * 200) - 100);
+            
+            mainChart.data.datasets[datasetIndex].data.push({
+                x: new Date(),
+                y: newValue
+            });
+            
+            if (mainChart.data.datasets[datasetIndex].data.length > 30) {
+                mainChart.data.datasets[datasetIndex].data.shift();
+            }
+            
+            mainChart.update('none');
+        }, 5000);
+    </script>
+</body>
+</html>
